@@ -2,37 +2,34 @@ package org.example;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 public class Main {
-	public void main() throws IOException, InterruptedException {
-		int N = 3; // プロセス数
-		int M = 5; // 各プロセスのスレッド数
-		int port = 5000;
+	void main(String[] args) throws IOException, InterruptedException {
+		final int n = Integer.parseInt(args[0]);
+		final String m = args[1];
+		final String port = args[2];
 
-		String classpath = System.getProperty("java.class.path");
+		final String classpath = System.getProperty("java.class.path");
 
-		// 集計プロセス起動
-		Process collector = new ProcessBuilder(
-				"java", "-cp", classpath, "org.example.CollectorProcess", String.valueOf(port)
+		final Process collector = new ProcessBuilder(
+				"java", "-cp", classpath, "org.example.CollectorProcess", port
 		).inheritIO().start();
 
-		Thread.sleep(1000); // 起動待ち
+		Thread.sleep(1000);
 
-		// N個の生成プロセス起動
-		List<Process> generators = new ArrayList<>();
-		for (int i = 0; i < N; i++) {
-			Process p = new ProcessBuilder(
-					"java", "-cp", classpath, "org.example.GeneratorProcess", "localhost", String.valueOf(port), String.valueOf(M)
+		final var generators = new ArrayList<Process>();
+		for (int i = 0; i < n; i++) {
+			final Process p = new ProcessBuilder(
+					"java", "-cp", classpath, "org.example.GeneratorProcess", "localhost", port, m
 			).inheritIO().start();
 			generators.add(p);
 		}
 
-		// 10秒実行
 		Thread.sleep(10_000);
 
-		// プロセス終了
-		for (Process p : generators) p.destroy();
+		for (Process p : generators) {
+			p.destroy();
+		}
 		collector.destroy();
 	}
 }
