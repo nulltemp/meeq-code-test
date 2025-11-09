@@ -1,17 +1,38 @@
 package org.example;
 
-//TIP コードを<b>実行</b>するには、<shortcut actionId="Run"/> を押すか
-// ガターの <icon src="AllIcons.Actions.Execute"/> アイコンをクリックします。
-public class Main {
-	static void main() {
-		//TIP ハイライトされたテキストにキャレットがある状態で <shortcut actionId="ShowIntentionActions"/> を押すと
-		// IntelliJ IDEA によるその修正案を確認できます。
-		IO.println(String.format("Hello and welcome!"));
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-		for (int i = 1; i <= 5; i++) {
-			//TIP <shortcut actionId="Debug"/> を押してコードのデバッグを開始します。<icon src="AllIcons.Debugger.Db_set_breakpoint"/> ブレークポイントを 1 つ設定しましたが、
-			// <shortcut actionId="ToggleLineBreakpoint"/> を押すといつでも他のブレークポイントを追加できます。
-			IO.println("i = " + i);
+public class Main {
+	public void main() throws IOException, InterruptedException {
+		int N = 3; // プロセス数
+		int M = 5; // 各プロセスのスレッド数
+		int port = 5000;
+
+		String classpath = System.getProperty("java.class.path");
+
+		// 集計プロセス起動
+		Process collector = new ProcessBuilder(
+				"java", "-cp", classpath, "org.example.CollectorProcess", String.valueOf(port)
+		).inheritIO().start();
+
+		Thread.sleep(1000); // 起動待ち
+
+		// N個の生成プロセス起動
+		List<Process> generators = new ArrayList<>();
+		for (int i = 0; i < N; i++) {
+			Process p = new ProcessBuilder(
+					"java", "-cp", classpath, "org.example.GeneratorProcess", "localhost", String.valueOf(port), String.valueOf(M)
+			).inheritIO().start();
+			generators.add(p);
 		}
+
+		// 10秒実行
+		Thread.sleep(10_000);
+
+		// プロセス終了
+		for (Process p : generators) p.destroy();
+		collector.destroy();
 	}
 }
