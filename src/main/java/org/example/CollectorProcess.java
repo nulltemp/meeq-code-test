@@ -5,13 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.Scanner;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class CollectorProcess {
-	private static final BlockingQueue<Integer> QUEUE = new LinkedBlockingQueue<>();
+	private static final Queue<Integer> QUEUE = new ArrayDeque<>();
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	private static final Object LOCK = new Object();
 
 	static void main(String[] args) throws Exception {
 		final int port = Integer.parseInt(args[0]);
@@ -29,18 +30,20 @@ public class CollectorProcess {
 			acceptor.start();
 
 			while (true) {
-				final var collector = new Collector(QUEUE, 10, 1000);
+				final var collector = new Collector(QUEUE, 10, 1000, LOCK);
 				System.out.println(OBJECT_MAPPER.writeValueAsString(collector.aggregateOnce()));
 			}
 		}
 	}
 
-	private record ClientHandler(Socket socket, BlockingQueue<Integer> queue) implements Runnable {
+	private record ClientHandler(Socket socket, Queue<Integer> queue) implements Runnable {
 		@Override
 		public void run() {
 			try (var scanner = new Scanner(socket.getInputStream())) {
 				while (scanner.hasNext()) {
-					queue.put(scanner.nextInt());
+					synchronized (LOCK) {
+						queue.add(scanner.nextInt());
+					}
 				}
 			} catch (Exception _) {
 			}

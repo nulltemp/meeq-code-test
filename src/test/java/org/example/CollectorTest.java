@@ -2,28 +2,25 @@ package org.example;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayDeque;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CollectorTest {
 	@Test
-	void aggregateOnce_countsCorrect() throws Exception {
-		var queue = new LinkedBlockingQueue<Integer>();
-		// 準備: 値をキューに入れる
-		queue.put(1);
-		queue.put(1);
-		queue.put(1);
-		queue.put(3);
-		queue.put(3);
-		queue.put(10); // 範囲外（bucketCount=10）なので無視される想定
+	void aggregateOnce_countsCorrect() {
+		var queue = new ArrayDeque<Integer>();
+		queue.add(1);
+		queue.add(1);
+		queue.add(1);
+		queue.add(3);
+		queue.add(3);
 
-		Collector collector = new Collector(queue, 10, 200);
-		Map<String, Object> result = collector.aggregateOnce();
+		Collector collector = new Collector(queue, 10, 200, new Object());
+		var result = collector.aggregateOnce();
 
-		@SuppressWarnings("unchecked")
-		Map<Integer, Integer> counts = (Map<Integer, Integer>) result.get("counts");
+		Map<Integer, Integer> counts = result.counts();
 
 		assertEquals(0, counts.get(0));
 		assertEquals(3, counts.get(1));

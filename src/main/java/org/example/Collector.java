@@ -1,11 +1,10 @@
 package org.example;
 
 import java.util.LinkedHashMap;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.Queue;
 
-public record Collector(BlockingQueue<Integer> queue, int bucketCount, long windowMillis) {
-	public CountRecord aggregateOnce() throws InterruptedException {
+public record Collector(Queue<Integer> queue, int bucketCount, long windowMillis, Object lock) {
+	public CountRecord aggregateOnce() {
 		final var counts = new LinkedHashMap<Integer, Integer>();
 		for (int i = 0; i < bucketCount; i++) {
 			counts.put(i, 0);
@@ -13,7 +12,10 @@ public record Collector(BlockingQueue<Integer> queue, int bucketCount, long wind
 
 		final long start = System.currentTimeMillis();
 		while (System.currentTimeMillis() - start < windowMillis) {
-			final Integer num = queue.poll(50, TimeUnit.MILLISECONDS);
+			final Integer num;
+			synchronized (lock) {
+				num = queue.poll();
+			}
 			if (num != null && num >= 0 && num < bucketCount) {
 				counts.put(num, counts.get(num) + 1);
 			}
