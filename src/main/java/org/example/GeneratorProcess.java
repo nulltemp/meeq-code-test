@@ -18,9 +18,9 @@ public class GeneratorProcess {
 			final var running = new AtomicBoolean(true);
 
 			final var threads = new ArrayList<Thread>();
+			final var rand = new Random();
 			for (int i = 0; i < m; i++) {
 				final Thread t = new Thread(() -> {
-					final Random rand = new Random();
 					while (running.get()) {
 						try {
 							final int value = rand.nextInt(10);

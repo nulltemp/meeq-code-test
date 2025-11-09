@@ -2,6 +2,7 @@ package org.example;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
 
 public class Main {
 	void main(String[] args) throws IOException, InterruptedException {
@@ -18,18 +19,25 @@ public class Main {
 		Thread.sleep(1000);
 
 		final var generators = new ArrayList<Process>();
-		for (int i = 0; i < n; i++) {
-			final Process p = new ProcessBuilder(
-					"java", "-cp", classpath, "org.example.GeneratorProcess", "localhost", port, m
-			).inheritIO().start();
-			generators.add(p);
-		}
+		try {
+			for (int i = 0; i < n; i++) {
+				final Process p = new ProcessBuilder(
+						"java", "-cp", classpath, "org.example.GeneratorProcess", "localhost", port, m
+				).inheritIO().start();
+				generators.add(p);
+			}
 
-		Thread.sleep(10_000);
-
-		for (Process p : generators) {
-			p.destroy();
+			final var latch = new CountDownLatch(1);
+			try {
+				latch.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		} finally {
+			for (Process p : generators) {
+				p.destroy();
+			}
+			collector.destroy();
 		}
-		collector.destroy();
 	}
 }

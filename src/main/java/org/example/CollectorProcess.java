@@ -1,5 +1,7 @@
 package org.example;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class CollectorProcess {
 	private static final BlockingQueue<Integer> QUEUE = new LinkedBlockingQueue<>();
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	static void main(String[] args) throws Exception {
 		final int port = Integer.parseInt(args[0]);
@@ -27,7 +30,7 @@ public class CollectorProcess {
 
 			while (true) {
 				final var collector = new Collector(QUEUE, 10, 1000);
-				System.out.println(collector.aggregateOnce());
+				System.out.println(OBJECT_MAPPER.writeValueAsString(collector.aggregateOnce()));
 			}
 		}
 	}
