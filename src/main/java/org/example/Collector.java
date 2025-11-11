@@ -1,27 +1,25 @@
 package org.example;
 
-import java.util.LinkedHashMap;
-import java.util.Queue;
+import java.util.HashMap;
+import java.util.Map;
 
-public record Collector(Queue<Integer> queue, int bucketCount, long windowMillis, Object lock) {
-	public CountRecord aggregateOnce() {
-		final var counts = new LinkedHashMap<Integer, Integer>();
-		for (int i = 0; i < bucketCount; i++) {
-			counts.put(i, 0);
+public class Collector {
+	private static final Object LOCK = new Object();
+
+	private Map<Integer, Integer> counts = new HashMap<>();
+
+	public void add(int number) {
+		synchronized (LOCK) {
+			counts.put(number, counts.getOrDefault(number, 0) + 1);
 		}
+	}
 
-		final long start = System.currentTimeMillis();
-		while (System.currentTimeMillis() - start < windowMillis) {
-			final Integer num;
-			synchronized (lock) {
-				num = queue.poll();
-			}
-			if (num != null && num >= 0 && num < bucketCount) {
-				counts.put(num, counts.get(num) + 1);
-			}
+	public Map<Integer, Integer> getAndResetCounts() {
+		final Map<Integer, Integer> result;
+		synchronized (LOCK) {
+			result = counts;
+			counts = new HashMap<>();
 		}
-
-		final long unixTime = System.currentTimeMillis() / 1000;
-		return new CountRecord(unixTime, counts);
+		return result;
 	}
 }
